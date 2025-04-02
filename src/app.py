@@ -36,47 +36,43 @@ def get_members():
     # this is how you can use the Family datastructure by calling its methods
     try:
         members = jackson_family.get_all_members()
-        response_body = {
-            "hello": "world",
-            "family": members
-        }
 
-        return jsonify(response_body), 200
+        return jsonify(members), 200
 
     except Exception as e:
         return "This family doesn't exists", 404
 
 
-@app.route('/member/<int:member_id>', methods=['GET', 'DELETE'])
+@app.route('/member/<int:member_id>', methods=['GET'])
 def get_member(member_id):
-    if request.method == 'GET':
+    try:
+        member = jackson_family.get_member(member_id)
+
+        if member is None:
+            return jsonify({"error": "Member not found"}), 404
+
+        response_body = {
+            "id": member.get('id'),
+            "first_name": member.get('first_name'),
+            "age": member.get('age'),
+            "lucky_numbers": member.get('lucky_numbers'),
+        }
+        return jsonify(response_body), 200
+
+    except Exception as e:
+        return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+
+@app.route('/member/<int:id>', methods=['DELETE'])
+def delete_member(id):
+    if request.method == 'DELETE':
         try:
-            member = jackson_family.get_member(member_id)
+            member_deleted = jackson_family.delete_member(id)
 
-            if member is None:
-                return jsonify({"error": "Member not found"}), 404
+            if member_deleted:
+                return jsonify({"done": True}), 200
 
-            response_body = {
-                "first_name": member.get('first_name'),
-                "last_name": member.get('last_name'),
-                "age": member.get('age'),
-                "lucky_numbers": member.get('lucky_numbers'),
-            }
-            return jsonify(response_body), 200
-        
-        except Exception as e:
-            return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
-
-    elif request.method == 'DELETE':
-        try:
-            member_deleted = jackson_family.delete_member(member_id)
-
-            if member_deleted is False:
-                return jsonify({"error": "Member couldn't be deleted"}), 400
-
-            return jsonify({
-                "done": True
-            }), 200
+            return jsonify({"error": "Member couldn't be deleted"}), 400
 
         except Exception as e:
             return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
@@ -88,16 +84,16 @@ def add_member():
         try:
             data = request.get_json()
 
-            if not data or 'first_name' not in data or data.get('age', 0) <= 0:
+            if not data or "first_name" not in data or data.get("age", 0) <= 0:
                 return jsonify({"error": "There is some data missing or wrong, please try again."}), 400
 
             response_body = jackson_family.add_member(data)
 
             return jsonify({
-                "id": response_body.get('id'),
-                "first_name": response_body.get('first_name'),
-                "age": response_body.get('age'),
-                "lucky_numbers": response_body.get('lucky_numbers'),
+                "id": response_body.get("id"),
+                "first_name": response_body.get("first_name"),
+                "age": response_body.get("age"),
+                "lucky_numbers": response_body.get("lucky_numbers"),
             }), 200
 
         except Exception as e:
